@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+
 import db.DB;
 import db.DbException;
 
@@ -22,17 +24,91 @@ public class SellerDaoJDBC implements SellerDao{ // sSellerDaoJDBC classe de imp
     }
     @Override
     public void insert(Seller obj){
-        
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement("INSERT INTO seller " + 
+            "(Name, Email, BirthDate, BaseSalary, DepartmentId) " +  
+            "VALUES " + 
+            "(?, ?, ?, ?, ?)"  
+            , Statement.RETURN_GENERATED_KEYS);
+
+            st.setString(1, obj.getName());
+            st.setString(2, obj.getEmail());
+            st.setDate(3, new java.sql.Date(obj.getBirthDate().getTime())); // converte a data do java.util para java.sql
+            st.setDouble(4, obj.getBaseSalary());
+            st.setInt(5, obj.getDepartment().getId());
+
+            int linhasAfetadas = st.getUpdateCount(); // retorna o numero de linhas afetadas
+
+
+            if (linhasAfetadas > 0) {
+                ResultSet result = st.getGeneratedKeys(); // retorna o id gerado
+                System.out.println("Feito! Linhas afetadas: " + linhasAfetadas);
+                if (result.next()){
+                    int id = result.getInt(1);
+                    obj.setId(id);
+                }
+            }
+
+            else {
+                System.out.println("Nenhuma linha afetada!");
+            }
+
+        } catch (SQLException e){
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
+    // metodo que atualiza o vendedor
     public void update(Seller obj){
-        
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement("UPDATE seller " + //
+                                "SET Name = ?, Email = ?, BirthDate = ?, BaseSalary = ?, DepartmentId = ? " + //
+                                "WHERE Id = ? "
+                                );
+
+            st.setString(1, obj.getName());
+            st.setString(2, obj.getEmail());
+            st.setDate(3, new java.sql.Date(obj.getBirthDate().getTime())); // converte a data do java.util para java.sql
+            st.setDouble(4, obj.getBaseSalary());
+            st.setInt(5, obj.getDepartment().getId());
+            st.setInt(6, obj.getId());
+
+            st.executeUpdate();
+
+
+        } catch (SQLException e){
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
     public void deleteById(Integer id){
-        
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement("DELETE FROM seller " + 
+            "WHERE Id = ?"  
+            );
+
+           st.setInt(1, id);
+
+           int rows = st.executeUpdate();
+            if (rows == 0){
+                throw new DbException("Id inexistente!");
+            }
+
+
+        } catch (SQLException e){
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
